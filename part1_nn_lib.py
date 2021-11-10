@@ -226,12 +226,12 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._W = None
-        self._b = None
+        self._W = xavier_init((self.n_out, self.n_in))      #np.random.standard_normal((self.n_in, self.n_out))
+        self._b = np.zeros(self.n_out)
 
         self._cache_current = None
-        self._grad_W_current = None
-        self._grad_b_current = None
+        self._grad_W_current = np.zeros((self.n_out, self.n_in)) #xavier_init(self.n_out)  #TODO: zero or xavier?
+        self._grad_b_current = np.ones(self._b.shape) # TODO: transpose?
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -253,7 +253,8 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        self._cache_current = x     # store x for gradient computation
+        return self._W @ x + self._b
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -270,13 +271,13 @@ class LinearLayer(Layer):
             grad_z {np.ndarray} -- Gradient array of shape (batch_size, n_out).
 
         Returns:
-            {np.ndarray} -- Array containing gradient with repect to layer
+            {np.ndarray} -- Array containing gradient with respect to layer
                 input, of shape (batch_size, n_in).
         """
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        return grad_z @ self._W
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -293,7 +294,10 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        self._grad_W_current = self._cache_current # TODO: transpose?
+        # grad wrt b will never change as it is independent of input
+        self._W -= learning_rate * self._grad_W_current
+        self._b -= learning_rate * self._grad_b_current
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -326,7 +330,18 @@ class MultiLayerNetwork(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._layers = None
+        self._layers = []
+        in_dim = self.input_dim
+        for i in range(len(self.neurons)):
+            out_dim = self.neurons[i]
+            layer = LinearLayer(in_dim, out_dim)
+            # TODO: actually use the layer in the constructor
+            if self.activations[i] == "sigmoid":
+                layer = SigmoidLayer()
+            elif self.activations[i] == "relu":
+                layer = ReluLayer()
+            self._layers.append(layer)
+            in_dim = out_dim
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -345,7 +360,11 @@ class MultiLayerNetwork(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        return np.zeros((1, self.neurons[-1])) # Replace with your own code
+        #return np.zeros((1, self.neurons[-1])) # Replace with your own code
+        current = x
+        for layer in self._layers:
+            current = layer.forward(current)
+        return current
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -363,13 +382,16 @@ class MultiLayerNetwork(object):
                 #_neurons_in_final_layer).
 
         Returns:
-            {np.ndarray} -- Array containing gradient with repect to layer
+            {np.ndarray} -- Array containing gradient with respect to layer
                 input, of shape (batch_size, input_dim).
         """
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        current_grad = grad_z
+        for layer in self._layers:
+            current_grad = layer.backward(current_grad)
+        return current_grad
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -386,7 +408,8 @@ class MultiLayerNetwork(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        for layer in self._layers:
+            layer.update_params() # TODO: we should see if we actually want update_params everywhere or just for linear layers etc.
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -633,4 +656,8 @@ def example_main():
 
 
 if __name__ == "__main__":
-    example_main()
+    #example_main()
+    lin_layer = LinearLayer(3, 4)
+    print(lin_layer._W)
+    print(lin_layer.forward(np.array([1, 1, 1])))
+    print(lin_layer.backward())
