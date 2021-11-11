@@ -226,12 +226,12 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._W = xavier_init((self.n_out, self.n_in))      #np.random.standard_normal((self.n_in, self.n_out))
-        self._b = np.zeros(self.n_out)
+        self._W = xavier_init((self.n_out, self.n_in))
+        self._b = np.zeros((1, self.n_out))
 
         self._cache_current = None
-        self._grad_W_current = np.zeros((self.n_out, self.n_in)) #xavier_init(self.n_out)  #TODO: zero or xavier?
-        self._grad_b_current = np.ones(self._b.shape) # TODO: transpose?
+        self._grad_W_current = np.zeros_like(self._W)
+        self._grad_b_current = np.zeros_like(self._b)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -253,8 +253,8 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._cache_current = x     # store x for gradient computation
-        return self._W @ x + self._b
+        self._cache_current = x       # store x for gradient computation
+        return x @ self._W + self._b  # maybe we will need to add a new axis if there is an error, for now python broadcasts
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -277,7 +277,12 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        return grad_z @ self._W
+        # compute gradients for updates
+        self._grad_W_current = self._cache_current.T @ grad_z
+        self._grad_b_current = np.ones(self._cache_current.shape[0]).T @ grad_z
+
+        # pass gradient wrt x back to next layer
+        return grad_z @ self._W.T
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -294,10 +299,8 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._grad_W_current = self._cache_current # TODO: transpose?
-        # grad wrt b will never change as it is independent of input
-        self._W -= learning_rate * self._grad_W_current
-        self._b -= learning_rate * self._grad_b_current
+        self._W = self._W - learning_rate * self._grad_W_current
+        self._b = self._b - learning_rate * self._grad_b_current
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -335,7 +338,7 @@ class MultiLayerNetwork(object):
         for i in range(len(self.neurons)):
             out_dim = self.neurons[i]
             layer = LinearLayer(in_dim, out_dim)
-            # TODO: actually use the layer in the constructor
+            # TODO: actually use the layer in the constructor of relu and sigmoid layers maybe
             if self.activations[i] == "sigmoid":
                 layer = SigmoidLayer()
             elif self.activations[i] == "relu":
@@ -360,7 +363,7 @@ class MultiLayerNetwork(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        #return np.zeros((1, self.neurons[-1])) # Replace with your own code
+        # TODO: can we do this faster?
         current = x
         for layer in self._layers:
             current = layer.forward(current)
@@ -388,9 +391,10 @@ class MultiLayerNetwork(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
+        # TODO: can we do this faster?
         current_grad = grad_z
-        for layer in self._layers:
-            current_grad = layer.backward(current_grad)
+        for i in range(len(self._layers)-1, -1, -1):
+            current_grad = self._layers[i].backward(current_grad)
         return current_grad
 
         #######################################################################
@@ -409,7 +413,7 @@ class MultiLayerNetwork(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
         for layer in self._layers:
-            layer.update_params() # TODO: we should see if we actually want update_params everywhere or just for linear layers etc.
+            layer.update_params(learning_rate) # TODO: we should see if we actually want update_params everywhere or just for linear layers etc.
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -657,7 +661,28 @@ def example_main():
 
 if __name__ == "__main__":
     #example_main()
-    lin_layer = LinearLayer(3, 4)
-    print(lin_layer._W)
-    print(lin_layer.forward(np.array([1, 1, 1])))
-    print(lin_layer.backward())
+
+    data = np.array([[2, 3, 4, 5], [1, 2, 3, 4]])
+
+    # this tests a single linear layer
+    lin_layer = LinearLayer(4, 2)
+    lin_layer._W = np.ones((4, 2))
+    lin_layer._b = np.ones((2, 1))
+    print(lin_layer.forward(data))
+    print(lin_layer.backward(np.array([[1, 2], [3, 4]])))
+    lin_layer.update_params(.001)
+    print(lin_layer._W, lin_layer._b)
+
+    # this tests a multilayer network
+    #model = MultiLayerNetwork(4, [4, 2], ["identity", "identity"])
+    #model._layers[0]._W = np.ones((4, 4))
+    #model._layers[1]._W = np.array([[1, 2, 3, 4],
+    #                                [1, 2, 3, 4]]).T
+    #model._layers[1]._b = np.ones((1, 2))
+    #result = model.forward(data)
+    #print(f"result = {result}")
+
+    #grad = model.backward(np.array([[2, 2], [3, 4]]))
+    #print(f"grad = {grad}")
+
+    #model.update_params(.001)
