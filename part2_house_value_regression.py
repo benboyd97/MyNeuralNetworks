@@ -2,6 +2,8 @@ import torch
 import pickle
 import numpy as np
 import pandas as pd
+from sklearn import preprocessing
+
 
 class Regressor():
 
@@ -34,7 +36,7 @@ class Regressor():
         #                       ** END OF YOUR CODE **
         #######################################################################
 
-    def _preprocessor(self, x, y = None, training = False):
+    def _preprocessor(self, x, y = None, training = False,norm_method='min_max'):
         """ 
         Preprocess input of the network.
           
@@ -53,11 +55,52 @@ class Regressor():
 
         """
 
-        #######################################################################
-        #                       ** START OF YOUR CODE **
-        #######################################################################
 
-        # Replace this code with your own
+        x=x.fillna(-1) #replace all NaNs with -1
+
+        if training ==True: 
+
+            self.one_hot=preprocessing.LabelBinarizer().fit(x['ocean_proximity']) #fit one-hot encoding
+            x['ocean_proximity']=np.argmax(self.one_hot.transform(x['ocean_proximity']),axis=1) #one-hot tranform
+            self.norm_x_min=x.min() #save x columnwise normalisation constants
+            self.norm_x_max=x.max() 
+            self.norm_x_mean=x.mean() 
+            self.norm_x_std=x.std() 
+
+
+
+            if isinstance(y, pd.DataFrame): #if y has a value
+                y=y.fillna(-1) #replace all NaNs with -1
+                self.norm_y_min=y.min() #save y normalisation constant
+                self.norm_y_max=y.max()
+                self.norm_y_mean=y.mean()
+                self.norm_y_std=y.std()
+
+
+        else:
+            x['ocean_proximity']=np.argmax(self.one_hot.transform(x['ocean_proximity']),axis=1) #perform one-hot tranform     
+
+
+        if norm_method=='standard': #if normalisation method is the standardised norm
+
+            x=(x-self.norm_x_mean)/self.norm_x_std #calculate using saved normalisation constants from training
+
+            if isinstance(y, pd.DataFrame):
+                y=y.fillna(-1) #replace all NaNs with -1
+                y=(y-self.norm_y_mean)/self.norm_y_std #calculate y normalisation using saved normalisation constants from training
+
+        if norm_method=='min_max': #if normalisation method is min max
+
+            x=(x-self.norm_x_min)/(self.norm_x_max-self.norm_x_min) #calculate using saved normalisation constants from training
+
+            if isinstance(y, pd.DataFrame):
+                y=y.fillna(-1) #replace all NaNs with -1
+                y=(y-self.norm_y_min)/(self.norm_y_max-self.norm_y_min) #calculate min max norm using saved constants from training
+
+
+
+                
+
         # Return preprocessed x and y, return None for y if it was None
         return x, (y if isinstance(y, pd.DataFrame) else None)
 
@@ -65,7 +108,21 @@ class Regressor():
         #                       ** END OF YOUR CODE **
         #######################################################################
 
+
+    def _revert(self,y,norm_method='min_max'):
+        #revert normalised ys back to previous unprocessed values
+        if norm_method=='min_max': #if normalisation method is min max
+            
+            return y*(self.norm_y_max-self.norm_y_min)+self.norm_y_min #revert using saved constants
+
+        elif norm_method=='standard': #if normmalisation method is standard normalisation
+            return y*self.norm_y_std+self.norm_y_mean #revert using save constants
+
+        else:
+            return y
+
         
+
     def fit(self, x, y):
         """
         Regressor training function
@@ -110,6 +167,8 @@ class Regressor():
         #######################################################################
 
         X, _ = self._preprocessor(x, training = False) # Do not forget
+
+        #pred_y=self._revert(pred_norm_y,norm_method='min_max')
         pass
 
         #######################################################################
