@@ -148,7 +148,7 @@ class SigmoidLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         derivative = self.sigmoid(self._cache_current) * (1-self.sigmoid(self._cache_current))
-        return np.multiply(grad_z , derivative)
+        return np.multiply(grad_z, derivative)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -183,7 +183,7 @@ class ReluLayer(Layer):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self._cache_current = x
-        return (x * (x>0))
+        return x * (x > 0)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -208,7 +208,7 @@ class ReluLayer(Layer):
         #######################################################################
         derivative = (self._cache_current > 0)
         derivative[derivative > 0] = 1
-        return np.multiply(grad_z , derivative)
+        return np.multiply(grad_z, derivative)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -234,7 +234,7 @@ class LinearLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._W = xavier_init((self.n_out, self.n_in))
+        self._W = xavier_init((self.n_in, self.n_out))
         self._b = np.zeros((1, self.n_out))
 
         self._cache_current = None
@@ -345,13 +345,16 @@ class MultiLayerNetwork(object):
         in_dim = self.input_dim
         for i in range(len(self.neurons)):
             out_dim = self.neurons[i]
-            layer = LinearLayer(in_dim, out_dim)
-            # TODO: actually use the layer in the constructor of relu and sigmoid layers maybe
-            if self.activations[i] == "sigmoid":
+            layer = LinearLayer(in_dim, out_dim)    # we always add a linear layer ti change dimensions
+            self._layers.append(layer)
+
+            if self.activations[i] == "sigmoid":    # if we have a non-linear activation, we add that as well
                 layer = SigmoidLayer()
+                self._layers.append(layer)
             elif self.activations[i] == "relu":
                 layer = ReluLayer()
-            self._layers.append(layer)
+                self._layers.append(layer)
+
             in_dim = out_dim
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -670,24 +673,23 @@ def example_main():
 if __name__ == "__main__":
     example_main()
 
-    '''
-    data = np.array([[2, 3, 4, 5], [1, 2, 3, 4]])
+    '''data = np.array([[2, 3, 4, 5], [1, 2, 3, 4]])
 
     # this tests a single linear layer
-    lin_layer = LinearLayer(4, 2)
-    lin_layer._W = np.ones((4, 2))
-    lin_layer._b = np.ones((2, 1))
-    print(lin_layer.forward(data))
-    print(lin_layer.backward(np.array([[1, 2], [3, 4]])))
-    lin_layer.update_params(.001)
-    print(lin_layer._W, lin_layer._b)
+    #lin_layer = LinearLayer(4, 2)
+    #lin_layer._W = np.ones((4, 2))
+    #lin_layer._b = np.ones((2, 1))
+    #print(lin_layer.forward(data))
+    #print(lin_layer.backward(np.array([[1, 2], [3, 4]])))
+    #lin_layer.update_params(.001)
+    #print(lin_layer._W, lin_layer._b)
 
     # This tests a multilayer network
     
-    model = MultiLayerNetwork(4, [4, 2], ["identity", "identity"])
-    model._layers[0]._W = np.ones((4, 4))
-    model._layers[1]._W = np.array([[1, 2, 3, 4],
-                                    [1, 2, 3, 4]]).T
+    model = MultiLayerNetwork(4, [4, 2], ["identity", "sigmoid"])
+    #model._layers[0]._W = np.ones((4, 4))
+    #model._layers[1]._W = np.array([[1, 2, 3, 4],
+    #                                [1, 2, 3, 4]]).T
     model._layers[1]._b = np.ones((1, 2))
     result = model.forward(data)
     print(f"result = {result}")
@@ -695,5 +697,4 @@ if __name__ == "__main__":
     grad = model.backward(np.array([[2, 2], [3, 4]]))
     print(f"grad = {grad}")
 
-    model.update_params(.001)
-    '''
+    model.update_params(.001)'''
