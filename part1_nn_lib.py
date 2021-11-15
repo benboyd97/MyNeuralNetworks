@@ -104,6 +104,9 @@ class SigmoidLayer(Layer):
         """
         self._cache_current = None
 
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
     def forward(self, x):
         """ 
         Performs forward pass through the Sigmoid layer.
@@ -120,7 +123,8 @@ class SigmoidLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        self._cache_current = x
+        return self.sigmoid(x)       
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -143,7 +147,8 @@ class SigmoidLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        derivative = self.sigmoid(self._cache_current) * (1-self.sigmoid(self._cache_current))
+        return np.multiply(grad_z , derivative)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -177,7 +182,8 @@ class ReluLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        self._cache_current = x
+        return (x * (x>0))
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -200,7 +206,9 @@ class ReluLayer(Layer):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        derivative = (self._cache_current > 0)
+        derivative[derivative > 0] = 1
+        return np.multiply(grad_z , derivative)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -571,7 +579,7 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        self.max = np.max(data, axis=0)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -590,7 +598,7 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        return (data / self.max)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -609,7 +617,7 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        return (data * self.max)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -660,8 +668,9 @@ def example_main():
 
 
 if __name__ == "__main__":
-    #example_main()
+    example_main()
 
+    '''
     data = np.array([[2, 3, 4, 5], [1, 2, 3, 4]])
 
     # this tests a single linear layer
@@ -673,16 +682,18 @@ if __name__ == "__main__":
     lin_layer.update_params(.001)
     print(lin_layer._W, lin_layer._b)
 
-    # this tests a multilayer network
-    #model = MultiLayerNetwork(4, [4, 2], ["identity", "identity"])
-    #model._layers[0]._W = np.ones((4, 4))
-    #model._layers[1]._W = np.array([[1, 2, 3, 4],
-    #                                [1, 2, 3, 4]]).T
-    #model._layers[1]._b = np.ones((1, 2))
-    #result = model.forward(data)
-    #print(f"result = {result}")
+    # This tests a multilayer network
+    
+    model = MultiLayerNetwork(4, [4, 2], ["identity", "identity"])
+    model._layers[0]._W = np.ones((4, 4))
+    model._layers[1]._W = np.array([[1, 2, 3, 4],
+                                    [1, 2, 3, 4]]).T
+    model._layers[1]._b = np.ones((1, 2))
+    result = model.forward(data)
+    print(f"result = {result}")
 
-    #grad = model.backward(np.array([[2, 2], [3, 4]]))
-    #print(f"grad = {grad}")
+    grad = model.backward(np.array([[2, 2], [3, 4]]))
+    print(f"grad = {grad}")
 
-    #model.update_params(.001)
+    model.update_params(.001)
+    '''
