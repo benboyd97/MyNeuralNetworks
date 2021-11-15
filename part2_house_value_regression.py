@@ -1,13 +1,28 @@
 import torch
+from torch import nn
 import pickle
 import numpy as np
 import pandas as pd
 from sklearn import preprocessing
 
 
+# Define model
+class NeuralNetwork(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(NeuralNetwork, self).__init__()
+        self.main = nn.Sequential(
+            nn.Linear(input_size, input_size*2),
+            nn.ReLU(),
+            nn.Linear(input_size*2, output_size)
+        )
+
+    def forward(self, x):
+        return self.main(x)
+
+
 class Regressor():
 
-    def __init__(self, x, nb_epoch = 1000):
+    def __init__(self, x, nb_epoch = 1000, learning_rate=0.01):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """ 
@@ -25,12 +40,15 @@ class Regressor():
         #                       ** START OF YOUR CODE **
         #######################################################################
 
-        # Replace this code with your own
+        # Preprocess dataset
         X, _ = self._preprocessor(x, training = True)
-        self.input_size = X.shape[1]
-        self.output_size = 1
-        self.nb_epoch = nb_epoch 
-        return
+        
+        self.nb_epoch = nb_epoch
+
+        self.model = NeuralNetwork(input_size=X.shape[1], output_size=1)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.loss = torch.nn.MSELoss()
+
 
         #######################################################################
         #                       ** END OF YOUR CODE **
