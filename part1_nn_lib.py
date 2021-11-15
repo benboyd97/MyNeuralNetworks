@@ -424,7 +424,8 @@ class MultiLayerNetwork(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
         for layer in self._layers:
-            layer.update_params(learning_rate) # TODO: we should see if we actually want update_params everywhere or just for linear layers etc.
+            if isinstance(layer, LinearLayer):
+                layer.update_params(learning_rate) # TODO: we should see if we actually want update_params everywhere or just for linear layers etc.
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -485,7 +486,7 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        self._loss_layer = None
+        self._loss_layer = MSELossLayer() if self.loss_fun == "mse" else CrossEntropyLossLayer()
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -508,7 +509,8 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        shuffled_indices = np.random.permutation(input_dataset.shape[0])
+        return input_dataset[shuffled_indices], target_dataset[shuffled_indices]
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -537,8 +539,26 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        for epoch in range(self.nb_epoch):
+            in_data = input_dataset
+            labels = target_dataset
 
+            # 1. shuffle
+            if self.shuffle_flag:
+                in_data, labels = self.shuffle(input_dataset, target_dataset)
+
+            n_batches = np.ceil(input_dataset.shape[0] / self.batch_size)
+            in_data = np.array_split(in_data, n_batches)
+            labels = np.array_split(labels, n_batches)
+
+            # loop over each batch
+            for i, batch in enumerate(in_data):
+                predictions = self.network.forward(batch)
+                error = self._loss_layer.forward(predictions, labels[i])
+                self.network.backward(self._loss_layer.backward())
+                self.network.update_params(self.learning_rate)
+
+            print(f"Epoch: {epoch}\t L: {error:.4f}")
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -666,6 +686,7 @@ def example_main():
 
     preds = net(x_val_pre).argmax(axis=1).squeeze()
     targets = y_val.argmax(axis=1).squeeze()
+    print(preds, targets)
     accuracy = (preds == targets).mean()
     print("Validation accuracy: {}".format(accuracy))
 
