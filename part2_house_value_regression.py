@@ -12,14 +12,22 @@ from sklearn.metrics import mean_absolute_error
 
 # Define model
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, hidden_layers = 5, neurons=30):
         super(NeuralNetwork, self).__init__()
+
+        linear_relu_block = nn.Sequential(
+            nn.Linear(neurons, neurons),
+            nn.ReLU()
+        )
+        linear_relu_stack = nn.Sequential()
+        for _ in range(hidden_layers):
+            linear_relu_stack = nn.Sequential(*(list(linear_relu_stack)+list(linear_relu_block)))
+
         self.main = nn.Sequential(
-            nn.Linear(input_size, input_size*3),
+            nn.Linear(input_size, neurons),
             nn.ReLU(),
-            nn.Linear(input_size*3, input_size*3),
-            nn.ReLU(),
-            nn.Linear(input_size*3, output_size)
+            linear_relu_stack,
+            nn.Linear(neurons, output_size)
         )
 
     def forward(self, x):
@@ -155,6 +163,10 @@ class Regressor():
 
                 loss.backward()
                 self.optimizer.step()
+            
+            # TODO early stopping
+            # TODO dropout
+            # TODO regularization
 
         return self.model
 
@@ -261,6 +273,10 @@ def RegressorHyperParameterSearch():
     #######################################################################
     #                       ** START OF YOUR CODE **
     #######################################################################
+
+    # learning rate (0.000001 - 10 (*10))
+    # neurons (5, 30 (+3))
+    # hidden layers (1, 5 (+1))
 
     return  # Return the chosen hyper parameters
 
