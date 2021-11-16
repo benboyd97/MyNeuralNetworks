@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.utils.data import TensorDataset, DataLoader
 import pickle
 import numpy as np
 import pandas as pd
@@ -49,7 +50,7 @@ class Regressor():
 
         self.model = NeuralNetwork(input_size=X.shape[1], output_size=1)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.loss = torch.nn.MSELoss()
+        self.criterion = torch.nn.MSELoss()
 
 
         #######################################################################
@@ -87,15 +88,6 @@ class Regressor():
             self.norm_x_std=x.std() 
 
 
-
-            if isinstance(y, pd.DataFrame): #if y has a value
-                y=y.fillna(-1) #replace all NaNs with -1
-                self.norm_y_min=y.min() #save y normalisation constant
-                self.norm_y_max=y.max()
-                self.norm_y_mean=y.mean()
-                self.norm_y_std=y.std()
-
-
         else:
             x['ocean_proximity']=np.argmax(self.one_hot.transform(x['ocean_proximity']),axis=1) #perform one-hot tranform     
 
@@ -104,21 +96,14 @@ class Regressor():
 
             x=(x-self.norm_x_mean)/self.norm_x_std #calculate using saved normalisation constants from training
 
-            if isinstance(y, pd.DataFrame):
-                y=y.fillna(-1) #replace all NaNs with -1
-                y=(y-self.norm_y_mean)/self.norm_y_std #calculate y normalisation using saved normalisation constants from training
 
         if norm_method=='min_max': #if normalisation method is min max
 
             x=(x-self.norm_x_min)/(self.norm_x_max-self.norm_x_min) #calculate using saved normalisation constants from training
 
-            if isinstance(y, pd.DataFrame):
-                y=y.fillna(-1) #replace all NaNs with -1
-                y=(y-self.norm_y_min)/(self.norm_y_max-self.norm_y_min) #calculate min max norm using saved constants from training
-
         x = x.to_numpy()
 
-        if y:
+        if isinstance(y, pd.DataFrame):
             y = y.to_numpy()
 
         return x, y
@@ -140,9 +125,7 @@ class Regressor():
         else:
             return y
 
-        
-
-    def fit(self, x, y):
+    def fit(self, x, y, batch_size=1):
         """
         Regressor training function
 
@@ -160,11 +143,33 @@ class Regressor():
         #                       ** START OF YOUR CODE **
         #######################################################################
 
-        X, Y = self._preprocessor(x, y = y, training = True) # Do not forget
+        X, Y = self._preprocessor(x, y = y, training = True)
 
-        # load tensors/numpy array into a data loader
+        # load numpy array into a data loader
+        # transform to torch tensor
+        tensor_x = torch.Tensor(X)
+        tensor_y = torch.Tensor(Y)
 
-        return self
+        dataset = TensorDataset(tensor_x, tensor_y)
+        dataloader = DataLoader(dataset, shuffle=True, batch_size=batch_size)
+
+        for _ in range(self.nb_epoch):
+
+            self.optimizer.zero_grad()
+
+            for x, y in dataloader:
+
+                pred = self.model(x)
+                loss = self.criterion(pred, y)
+
+                loss.backward()
+                self.optimizer.step()
+                
+
+
+
+
+        return self.model
 
         #######################################################################
         #                       ** END OF YOUR CODE **
