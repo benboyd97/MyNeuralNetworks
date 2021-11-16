@@ -7,7 +7,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from numpy.random import default_rng
-
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 
 # Define model
 class NeuralNetwork(nn.Module):
@@ -162,7 +163,7 @@ class Regressor():
         #######################################################################
 
             
-    def predict(self, x):
+    def predict(self, x, pre_proc=True):
         """
         Ouput the value corresponding to an input x.
 
@@ -178,9 +179,11 @@ class Regressor():
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-
-        X, _ = self._preprocessor(x, training = False)
-        tensor_x = torch.Tensor(X)
+        if pre_proc:
+            X, _ = self._preprocessor(x, training = False)
+            tensor_x = torch.Tensor(X)
+        else:
+            tensor_x = torch.Tensor(x)
         return self.model(tensor_x).detach().numpy()
 
 
@@ -188,7 +191,7 @@ class Regressor():
         #                       ** END OF YOUR CODE **
         #######################################################################
 
-    def score(self, x, y):
+    def score(self, x, y, mse=True):
         """
         Function to evaluate the model accuracy on a validation dataset.
 
@@ -205,9 +208,14 @@ class Regressor():
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
+        X, Y = self._preprocessor(x, y, training = False)
+        preds = self.predict(X, pre_proc=False)
 
-        X, Y = self._preprocessor(x, y = y, training = False) # Do not forget
-        return 0 # Replace this code with your own
+        if mse:
+            return mean_squared_error(Y, preds)
+        else:
+            return mean_absolute_error(Y, preds)
+        
 
         #######################################################################
         #                       ** END OF YOUR CODE **
