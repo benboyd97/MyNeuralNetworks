@@ -11,9 +11,11 @@ class NeuralNetwork(nn.Module):
     def __init__(self, input_size, output_size):
         super(NeuralNetwork, self).__init__()
         self.main = nn.Sequential(
-            nn.Linear(input_size, input_size*2),
+            nn.Linear(input_size, input_size*3),
             nn.ReLU(),
-            nn.Linear(input_size*2, output_size)
+            nn.Linear(input_size*3, input_size*3),
+            nn.ReLU(),
+            nn.Linear(input_size*3, output_size)
         )
 
     def forward(self, x):
@@ -40,11 +42,10 @@ class Regressor():
         #                       ** START OF YOUR CODE **
         #######################################################################
 
+        self.nb_epoch = nb_epoch
+
         # Preprocess dataset
         X, _ = self._preprocessor(x, training = True)
-        # load tensors/numpy array into a data loader
-        
-        self.nb_epoch = nb_epoch
 
         self.model = NeuralNetwork(input_size=X.shape[1], output_size=1)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
@@ -160,6 +161,9 @@ class Regressor():
         #######################################################################
 
         X, Y = self._preprocessor(x, y = y, training = True) # Do not forget
+
+        # load tensors/numpy array into a data loader
+
         return self
 
         #######################################################################
