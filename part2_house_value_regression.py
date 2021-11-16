@@ -42,6 +42,7 @@ class Regressor():
 
         # Preprocess dataset
         X, _ = self._preprocessor(x, training = True)
+        # load tensors/numpy array into a data loader
         
         self.nb_epoch = nb_epoch
 
@@ -54,7 +55,7 @@ class Regressor():
         #                       ** END OF YOUR CODE **
         #######################################################################
 
-    def _preprocessor(self, x, y = None, training = False,norm_method='min_max'):
+    def _preprocessor(self, x, y = None, training = False, norm_method = 'min_max'):
         """ 
         Preprocess input of the network.
           
@@ -77,7 +78,6 @@ class Regressor():
         x=x.fillna(-1) #replace all NaNs with -1
 
         if training ==True: 
-
             self.one_hot=preprocessing.LabelBinarizer().fit(x['ocean_proximity']) #fit one-hot encoding
             x['ocean_proximity']=np.argmax(self.one_hot.transform(x['ocean_proximity']),axis=1) #one-hot tranform
             self.norm_x_min=x.min() #save x columnwise normalisation constants
@@ -115,12 +115,12 @@ class Regressor():
                 y=y.fillna(-1) #replace all NaNs with -1
                 y=(y-self.norm_y_min)/(self.norm_y_max-self.norm_y_min) #calculate min max norm using saved constants from training
 
+        x = x.to_numpy()
 
+        if y:
+            y = y.to_numpy()
 
-                
-
-        # Return preprocessed x and y, return None for y if it was None
-        return x, (y if isinstance(y, pd.DataFrame) else None)
+        return x, y
 
         #######################################################################
         #                       ** END OF YOUR CODE **
