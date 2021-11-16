@@ -154,9 +154,6 @@ class Regressor():
 
                 loss.backward()
                 self.optimizer.step()
-            
-            print(loss, end="\r")
-            
 
         return self.model
 
