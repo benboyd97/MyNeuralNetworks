@@ -4,7 +4,9 @@ from torch.utils.data import TensorDataset, DataLoader
 import pickle
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
+from numpy.random import default_rng
 
 
 # Define model
@@ -113,19 +115,7 @@ class Regressor():
         #######################################################################
 
 
-    def _revert(self,y,norm_method='min_max'):
-        #revert normalised ys back to previous unprocessed values
-        if norm_method=='min_max': #if normalisation method is min max
-            
-            return y*(self.norm_y_max-self.norm_y_min)+self.norm_y_min #revert using saved constants
-
-        elif norm_method=='standard': #if normmalisation method is standard normalisation
-            return y*self.norm_y_std+self.norm_y_mean #revert using save constants
-
-        else:
-            return y
-
-    def fit(self, x, y, batch_size=1):
+    def fit(self, x, y, batch_size=1, shuffle=True):
         """
         Regressor training function
 
@@ -151,7 +141,7 @@ class Regressor():
         tensor_y = torch.Tensor(Y)
 
         dataset = TensorDataset(tensor_x, tensor_y)
-        dataloader = DataLoader(dataset, shuffle=True, batch_size=batch_size)
+        dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=batch_size)
 
         for _ in range(self.nb_epoch):
 
@@ -164,10 +154,9 @@ class Regressor():
 
                 loss.backward()
                 self.optimizer.step()
-                
-
-
-
+            
+            print(loss, end="\r")
+            
 
         return self.model
 
@@ -193,10 +182,10 @@ class Regressor():
         #                       ** START OF YOUR CODE **
         #######################################################################
 
-        X, _ = self._preprocessor(x, training = False) # Do not forget
+        X, _ = self._preprocessor(x, training = False)
+        tensor_x = torch.Tensor(X)
+        return self.model(tensor_x).detach().numpy()
 
-        #pred_y=self._revert(pred_norm_y,norm_method='min_max')
-        pass
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -275,7 +264,6 @@ def RegressorHyperParameterSearch():
     #######################################################################
 
 
-
 def example_main():
 
     output_label = "median_house_value"
@@ -285,9 +273,17 @@ def example_main():
     # But remember that LabTS tests take Pandas Dataframe as inputs
     data = pd.read_csv("housing.csv") 
 
+    train, test = train_test_split(data, test_size=0.2, shuffle=True)
+    test, val = train_test_split(test, test_size=0.5)
+
     # Spliting input and output
-    x_train = data.loc[:, data.columns != output_label]
-    y_train = data.loc[:, [output_label]]
+    x_train = train.loc[:, data.columns != output_label]
+    y_train = train.loc[:, [output_label]]
+    x_val = val.loc[:, data.columns != output_label]
+    y_val = val.loc[:, [output_label]]
+    x_test = test.loc[:, data.columns != output_label]
+    y_test = test.loc[:, [output_label]]
+
 
     # Training
     # This example trains on the whole available dataset. 
