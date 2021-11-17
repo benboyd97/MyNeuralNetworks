@@ -75,7 +75,7 @@ class Regressor():
                                    output_size=1, 
                                    hidden_layers=self.hidden_layers, 
                                    neurons=self.neurons,
-                                   dropout=dropout)
+                                   dropout=dropout).to_device()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = torch.nn.MSELoss()
 
@@ -394,5 +394,6 @@ def example_main():
 
 
 if __name__ == "__main__":
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     example_main()
 
