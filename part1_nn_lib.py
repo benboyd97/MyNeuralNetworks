@@ -603,6 +603,7 @@ class Preprocessor(object):
         #                       ** START OF YOUR CODE **
         #######################################################################
         self.max = np.max(data, axis=0)
+        self.min = np.min(data, axis=0)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -621,7 +622,7 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        return (data / self.max)
+        return np.subtract(data, self.min) / (self.max - self.min)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -640,7 +641,7 @@ class Preprocessor(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        return (data * self.max)
+        return np.add((data * (self.max - self.min)), self.min)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -659,17 +660,12 @@ def example_main():
     x = dat[:, :4]
     y = dat[:, 4:]
 
+    preprocessor = Preprocessor(x)
     split_idx = int(0.8 * len(x))
-
-    x_train = x[:split_idx]
+    x_train = preprocessor.apply(x[:split_idx])
     y_train = y[:split_idx]
-    x_val = x[split_idx:]
+    x_val = preprocessor.apply(x[split_idx:])
     y_val = y[split_idx:]
-
-    prep_input = Preprocessor(x_train)
-
-    x_train_pre = prep_input.apply(x_train)
-    x_val_pre = prep_input.apply(x_val)
 
     trainer = Trainer(
         network=net,
@@ -680,11 +676,11 @@ def example_main():
         shuffle_flag=True,
     )
 
-    trainer.train(x_train_pre, y_train)
-    print("Train loss = ", trainer.eval_loss(x_train_pre, y_train))
-    print("Validation loss = ", trainer.eval_loss(x_val_pre, y_val))
+    trainer.train(x_train, y_train)
+    print("Train loss = ", trainer.eval_loss(x_train, y_train))
+    print("Validation loss = ", trainer.eval_loss(x_val, y_val))
 
-    preds = net(x_val_pre).argmax(axis=1).squeeze()
+    preds = net(x_val).argmax(axis=1).squeeze()
     targets = y_val.argmax(axis=1).squeeze()
     print(preds, targets)
     accuracy = (preds == targets).mean()
