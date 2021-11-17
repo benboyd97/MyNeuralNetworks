@@ -1,31 +1,35 @@
-import torch
-from torch import nn
-from torch.utils.data import TensorDataset, DataLoader
 import pickle
 import numpy as np
 import pandas as pd
+
+import torch
+from torch import nn
+from torch.utils.data import TensorDataset, DataLoader
+
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
-from numpy.random import default_rng
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import GridSearchCV,RandomizedSearchCV
 
 # Define model
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_size, output_size, hidden_layers, neurons, dropout=0.25):
+    def __init__(self, input_size, output_size, hidden_layers, neurons, dropout):
         super(NeuralNetwork, self).__init__()
 
+        # Single linear layer with relu activation and dropout
         linear_relu_block = nn.Sequential(
             nn.Linear(neurons, neurons),
             nn.ReLU(),
             nn.Dropout(dropout)
         )
 
+        # Stack linear layer blocks as hidden layers
         linear_relu_stack = nn.Sequential()
         for _ in range(hidden_layers):
             linear_relu_stack = nn.Sequential(*(list(linear_relu_stack)+list(linear_relu_block)))
 
+        # Add hidden layers to input and output layers
         self.main = nn.Sequential(
             nn.Linear(input_size, neurons),
             nn.ReLU(),
@@ -39,7 +43,7 @@ class NeuralNetwork(nn.Module):
 
 class Regressor():
 
-    def __init__(self, x, nb_epoch = 100, learning_rate=0.01, hidden_layers = 5, neurons=30):
+    def __init__(self, x, nb_epoch=100, learning_rate=0.01, hidden_layers=5, neurons=30, dropout=0.25):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """ 
@@ -56,17 +60,22 @@ class Regressor():
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
+        # TODO: Why are these class attributes?
         self.nb_epoch = nb_epoch
         self.x=x
         self.learning_rate=learning_rate
         self.hidden_layers=hidden_layers
         self.neurons=neurons
 
-
-        # Preprocess dataset
+        # Preprocess dataset to build network
         X, _ = self._preprocessor(x, training = True)
 
-        self.model = NeuralNetwork(input_size=X.shape[1], output_size=1, hidden_layers=self.hidden_layers,neurons=self.neurons)
+        # Define model, optimizer, and criterion
+        self.model = NeuralNetwork(input_size=X.shape[1],
+                                   output_size=1, 
+                                   hidden_layers=self.hidden_layers, 
+                                   neurons=self.neurons,
+                                   dropout=dropout)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = torch.nn.MSELoss()
 
@@ -94,44 +103,42 @@ class Regressor():
 
         """
 
+        x = x.fillna(-1) # replace all NaNs with -1
 
-        x=x.fillna(-1) #replace all NaNs with -1
+        if training == True: 
+            # one-hot encoding
+            self.one_hot = preprocessing.LabelBinarizer().fit(x['ocean_proximity'])
+            x['ocean_proximity'] = np.argmax(self.one_hot.transform(x['ocean_proximity']), axis=1) 
 
-        if training ==True: 
-            self.one_hot=preprocessing.LabelBinarizer().fit(x['ocean_proximity']) #fit one-hot encoding
-            x['ocean_proximity']=np.argmax(self.one_hot.transform(x['ocean_proximity']),axis=1) #one-hot tranform
-            self.norm_x_min=x.min() #save x columnwise normalisation constants
-            self.norm_x_max=x.max() 
-            self.norm_x_mean=x.mean() 
-            self.norm_x_std=x.std() 
-
-
+            # save x columnwise normalisation constants
+            self.norm_x_min = x.min() 
+            self.norm_x_max = x.max() 
+            self.norm_x_mean = x.mean() 
+            self.norm_x_std = x.std() 
         else:
-            x['ocean_proximity']=np.argmax(self.one_hot.transform(x['ocean_proximity']),axis=1) #perform one-hot tranform     
+            # perform one-hot tranform 
+            x['ocean_proximity'] = np.argmax(self.one_hot.transform(x['ocean_proximity']), axis=1)     
 
+        if norm_method == 'standard':
+            # calculate using saved normalisation constants from training
+            x = (x-self.norm_x_mean)/self.norm_x_std
 
-        if norm_method=='standard': #if normalisation method is the standardised norm
+        if norm_method == 'min_max':
+            # calculate using saved normalisation constants from training
+            x = (x-self.norm_x_min)/(self.norm_x_max-self.norm_x_min) 
 
-            x=(x-self.norm_x_mean)/self.norm_x_std #calculate using saved normalisation constants from training
-
-
-        if norm_method=='min_max': #if normalisation method is min max
-
-            x=(x-self.norm_x_min)/(self.norm_x_max-self.norm_x_min) #calculate using saved normalisation constants from training
-
-        x = x.to_numpy()
-
+        # only convert y to numpy if it was passed
         if isinstance(y, pd.DataFrame):
             y = y.to_numpy()
 
-        return x, y
+        return x.to_numpy(), y
 
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
 
 
-    def fit(self, x, y, batch_size=1, shuffle=True):
+    def fit(self, x, y, mini_batch_size=50, shuffle=True, x_val=None, y_val=None, early_stop_n=5):
         """
         Regressor training function
 
@@ -149,29 +156,47 @@ class Regressor():
         #                       ** START OF YOUR CODE **
         #######################################################################
 
+        # Preprocess dataset
         X, Y = self._preprocessor(x, y = y, training = True)
 
-        # load numpy array into a data loader
-        # transform to torch tensor
+        # transform np to torch tensor
         tensor_x = torch.Tensor(X)
         tensor_y = torch.Tensor(Y)
 
+        # load tensors into a dataloader object
         dataset = TensorDataset(tensor_x, tensor_y)
-        dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=batch_size)
+        dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=mini_batch_size)
+
+        # keep track of loss on val set and a streak of subsequent increases in val loss
+        val_score, val_streak, model_backup = float("inf"), 0, None
 
         for _ in range(self.nb_epoch):
 
             for x, y in dataloader:
-
                 
+                # Reset gradients
+                self.optimizer.zero_grad()
+
                 pred = self.model(x)
                 loss = self.criterion(pred, y)
 
-                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-            # TODO early stopping
+            # Early stopping after each epoch
+            if isinstance(x_val, pd.DataFrame) and isinstance(y_val, pd.DataFrame):
+                new_val_score = self.score(x_val, y_val)
+                if new_val_score > val_score:
+                    val_streak += 1
+                else:
+                    val_streak = 0
+                    model_backup = self.model.state_dict()
+                val_score = new_val_score
+
+                if val_streak > early_stop_n:
+                    self.model.load_state_dict(model_backup)
+                    return self.model
+
             # TODO regularization
 
         return self.model
@@ -197,11 +222,12 @@ class Regressor():
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
+
+        # Only preprocess input if specified to allow proprocessed data to also be passed
         if pre_proc:
-            X, _ = self._preprocessor(x, training = False)
-            tensor_x = torch.Tensor(X)
-        else:
-            tensor_x = torch.Tensor(x)
+            x, _ = self._preprocessor(x, training = False)
+        tensor_x = torch.Tensor(x)
+
         return self.model(tensor_x).detach().numpy()
 
 
@@ -226,6 +252,7 @@ class Regressor():
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
+
         X, Y = self._preprocessor(x, y, training = False)
         preds = self.predict(X, pre_proc=False)
 
@@ -233,6 +260,10 @@ class Regressor():
             return mean_squared_error(Y, preds)
         else:
             return mean_absolute_error(Y, preds)
+
+        #######################################################################
+        #                       ** END OF YOUR CODE **
+        #######################################################################
         
 
     def get_params(self,deep=True):
@@ -244,13 +275,6 @@ class Regressor():
             setattr(self, parameter, value)
 
         return self
-
-
-
-
-        #######################################################################
-        #                       ** END OF YOUR CODE **
-        #######################################################################
 
 
 def save_regressor(trained_model): 
@@ -290,13 +314,15 @@ def RegressorHyperParameterSearch(x,y,method='exhaustive'):
 
     """
 
-        #######################################################################
+    #######################################################################
     #                       ** START OF YOUR CODE **
     #######################################################################
 
     # learning rate (0.000001 - 10 (*10))
     # neurons (5, 30 (+3))
     # hidden layers (1, 5 (+1))
+    # dropout rate
+    # mini_batch size
 
     hidden_layers_array=np.array([1,2,3,4,5])
     neurons_array=np.array([5,10,15,20,25,30])
@@ -323,11 +349,12 @@ def RegressorHyperParameterSearch(x,y,method='exhaustive'):
 
 def example_main():
 
+    # Seed for reproducability
+    torch.manual_seed(0)
+    np.random.seed(0)
+
     output_label = "median_house_value"
 
-    # Use pandas to read CSV data as it contains various object types
-    # Feel free to use another CSV reader tool
-    # But remember that LabTS tests take Pandas Dataframe as inputs
     data = pd.read_csv("housing.csv") 
 
     train, test = train_test_split(data, test_size=0.2, shuffle=True)
@@ -341,11 +368,6 @@ def example_main():
     x_test = test.loc[:, data.columns != output_label]
     y_test = test.loc[:, [output_label]]
 
-
-    # Training
-    # This example trains on the whole available dataset. 
-    # You probably want to separate some held-out data 
-    # to make sure the model isn't overfitting
     regressor = Regressor(x_train, nb_epoch = 100)
     regressor.fit(x_train, y_train)
 
