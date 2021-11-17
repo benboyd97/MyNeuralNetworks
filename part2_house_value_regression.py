@@ -13,13 +13,15 @@ from sklearn.model_selection import GridSearchCV,RandomizedSearchCV
 
 # Define model
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_size, output_size, hidden_layers, neurons):
+    def __init__(self, input_size, output_size, hidden_layers, neurons, dropout=0.25):
         super(NeuralNetwork, self).__init__()
 
         linear_relu_block = nn.Sequential(
             nn.Linear(neurons, neurons),
-            nn.ReLU()
+            nn.ReLU(),
+            nn.Dropout(dropout)
         )
+
         linear_relu_stack = nn.Sequential()
         for _ in range(hidden_layers):
             linear_relu_stack = nn.Sequential(*(list(linear_relu_stack)+list(linear_relu_block)))
