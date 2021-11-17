@@ -321,8 +321,12 @@ def RegressorHyperParameterSearch(x,y,method='exhaustive'):
     # learning rate (0.000001 - 10 (*10))
     # neurons (5, 30 (+3))
     # hidden layers (1, 5 (+1))
-    # dropout rate
-    # mini_batch size
+    # early stop n
+    
+    # maunual exprimentation:
+        # mini_batch size
+        # max_epochs
+        # dropout rate
 
     hidden_layers_array=np.array([1,2,3,4,5])
     neurons_array=np.array([5,10,15,20,25,30])
@@ -369,7 +373,6 @@ def example_main():
     y_test = test.loc[:, [output_label]]
 
     regressor = Regressor(x_train, nb_epoch = 10)
-    print("done")
     regressor.fit(x_train, y_train)
 
     # Error
