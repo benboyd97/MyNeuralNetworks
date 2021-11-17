@@ -9,10 +9,11 @@ from sklearn import preprocessing
 from numpy.random import default_rng
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import GridSearchCV,RandomizedSearchCV
 
 # Define model
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_size, output_size, hidden_layers = 5, neurons=30):
+    def __init__(self, input_size, output_size, hidden_layers, neurons):
         super(NeuralNetwork, self).__init__()
 
         linear_relu_block = nn.Sequential(
@@ -36,7 +37,7 @@ class NeuralNetwork(nn.Module):
 
 class Regressor():
 
-    def __init__(self, x, nb_epoch = 1000, learning_rate=0.01):
+    def __init__(self, x, nb_epoch = 2, learning_rate=0.01, hidden_layers = 5, neurons=30):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """ 
@@ -53,13 +54,17 @@ class Regressor():
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-
         self.nb_epoch = nb_epoch
+        self.x=x
+        self.learning_rate=learning_rate
+        self.hidden_layers=hidden_layers
+        self.neurons=neurons
+
 
         # Preprocess dataset
         X, _ = self._preprocessor(x, training = True)
 
-        self.model = NeuralNetwork(input_size=X.shape[1], output_size=1)
+        self.model = NeuralNetwork(input_size=X.shape[1], output_size=1, hidden_layers=self.hidden_layers,neurons=self.neurons)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = torch.nn.MSELoss()
 
@@ -163,7 +168,7 @@ class Regressor():
 
                 loss.backward()
                 self.optimizer.step()
-            
+
             # TODO early stopping
             # TODO dropout
             # TODO regularization
@@ -229,6 +234,19 @@ class Regressor():
             return mean_absolute_error(Y, preds)
         
 
+    def get_params(self,deep=True):
+        return  { 'x':self.x,'hidden_layers':self.hidden_layers,'neurons':self.neurons,'learning_rate':self.learning_rate}
+
+
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+
+        return self
+
+
+
+
         #######################################################################
         #                       ** END OF YOUR CODE **
         #######################################################################
@@ -256,7 +274,8 @@ def load_regressor():
 
 
 
-def RegressorHyperParameterSearch(): 
+def RegressorHyperParameterSearch(x,y,method='exhaustive'):
+ 
     # Ensure to add whatever inputs you deem necessary to this function
     """
     Performs a hyper-parameter for fine-tuning the regressor implemented 
@@ -270,7 +289,7 @@ def RegressorHyperParameterSearch():
 
     """
 
-    #######################################################################
+        #######################################################################
     #                       ** START OF YOUR CODE **
     #######################################################################
 
@@ -278,7 +297,23 @@ def RegressorHyperParameterSearch():
     # neurons (5, 30 (+3))
     # hidden layers (1, 5 (+1))
 
-    return  # Return the chosen hyper parameters
+    hidden_layers_array=np.array([1,2,3,4,5])
+    neurons_array=np.array([5,10,15,20,25,30])
+    learning_rate_array=np.array([0.0001,0.001,0.01,0.1,1,10])
+
+    parameters = {'hidden_layers':hidden_layers_array,'neurons':neurons_array,'learning_rate':learning_rate_array}
+
+    if method=='exhaustive':
+        cv=GridSearchCV(Regressor(x=x),parameters,scoring='neg_mean_squared_error')
+
+    elif method=='random':
+        cv=RandomizedSearchCV(Regressor(x=x),parameters,scoring='neg_mean_squared_error',n_iter=30)
+
+    cv.fit(x,y)
+    best_params=cv.best_params_
+
+
+    return best_params['hidden_layers'],best_params['neurons'],best_params['learning_rate'] # Return the chosen hyper parameters
 
     #######################################################################
     #                       ** END OF YOUR CODE **
@@ -295,13 +330,13 @@ def example_main():
     data = pd.read_csv("housing.csv") 
 
     train, test = train_test_split(data, test_size=0.2, shuffle=True)
-    test, val = train_test_split(test, test_size=0.5)
+    #test, val = train_test_split(test, test_size=0.5)
 
     # Spliting input and output
     x_train = train.loc[:, data.columns != output_label]
     y_train = train.loc[:, [output_label]]
-    x_val = val.loc[:, data.columns != output_label]
-    y_val = val.loc[:, [output_label]]
+    #x_val = val.loc[:, data.columns != output_label]
+    #y_val = val.loc[:, [output_label]]
     x_test = test.loc[:, data.columns != output_label]
     y_test = test.loc[:, [output_label]]
 
@@ -310,13 +345,29 @@ def example_main():
     # This example trains on the whole available dataset. 
     # You probably want to separate some held-out data 
     # to make sure the model isn't overfitting
-    regressor = Regressor(x_train, nb_epoch = 10)
+    regressor = Regressor(x_train, nb_epoch = 1)
     regressor.fit(x_train, y_train)
-    save_regressor(regressor)
 
     # Error
-    error = regressor.score(x_train, y_train)
+    error = regressor.score(x_test, y_test)
     print("\nRegressor error: {}\n".format(error))
+
+    print("\nPerforming Hyper Parameter Tuning")
+    best_hidden_layers,best_neurons,best_learning_rate=RegressorHyperParameterSearch(x_train,y_train)
+    print('\nBest Params:')
+    print('Hidden Layers: ',best_hidden_layers)
+    print('Neurons: ',best_neurons)
+    print('Learning Rate', best_learning_rate)
+
+    print("\nTraining With Best Params")
+    best_regressor=Regressor(x_train,hidden_layers=best_hidden_layers,neurons=best_neurons,learning_rate=best_learning_rate)
+
+    best_regressor.fit(x_train, y_train)
+    best_error = best_regressor.score(x_test, y_test)
+
+    print("\nBest Regressor error: {}\n".format(best_error))
+    save_regressor(best_regressor)
+
 
 
 if __name__ == "__main__":
