@@ -394,8 +394,8 @@ def example_main():
     print('\nBest Params:')
     print('Hidden Layers: ',best_hidden_layers)
     print('Neurons: ',best_neurons)
-    print('Learning Rate', best_learning_rate)
-    print('Best Early Stop n', best_learning_rate)
+    print('Learning Rate: ', best_learning_rate)
+    print('Best Early Stop n: ', best_learning_rate)
 
     print("\nTraining With Best Params")
     best_regressor=Regressor(x_train,hidden_layers=best_hidden_layers,neurons=best_neurons,learning_rate=best_learning_rate,nb_epoch=1000,dropout=0.25)
@@ -406,6 +406,13 @@ def example_main():
     save_regressor(best_regressor)
 
 
+    f=open('BEST_PARAMS')
+
+    f.write('Hidden Layers: '+str(best_hidden_layers)+ '\n')
+    f.write('Neurons: ' + str(best_neurons)+ '\n')
+    f.write('Learning RateL ' + str(best_learning_rate)+ '\n')
+    f.write('Best Early Stop n: ' + str(best_learning_rate)+ '\n')
+    f.close()
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     bs=5000
