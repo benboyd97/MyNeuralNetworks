@@ -352,7 +352,7 @@ def RegressorHyperParameterSearch(x_train,y_train,x_val,y_val,x_test,y_test):
 
     best_ids=np.where(results==np.max(results))
 
-    return best_ids[0][0],best_ids[1][0],best_ids[2][0],best_ids[3][0]
+    return hidden_layers_array[best_ids[0][0]],neurons_array[best_ids[1][0]],lr_array[best_ids[2][0]],n_array[best_ids[3][0]]
 
     #######################################################################
     #                       ** END OF YOUR CODE **
@@ -410,7 +410,7 @@ def example_main():
 
     f.write('Hidden Layers: '+str(best_hidden_layers)+ '\n')
     f.write('Neurons: ' + str(best_neurons)+ '\n')
-    f.write('Learning RateL ' + str(best_learning_rate)+ '\n')
+    f.write('Learning Rate: ' + str(best_learning_rate)+ '\n')
     f.write('Best Early Stop n: ' + str(best_learning_rate)+ '\n')
     f.close()
 if __name__ == "__main__":

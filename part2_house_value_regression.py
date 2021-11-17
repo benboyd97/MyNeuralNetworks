@@ -336,7 +336,7 @@ def RegressorHyperParameterSearch(x_train,y_train,x_val,y_val,x_test,y_test):
 
     best_ids=np.where(results==np.max(results))
 
-    return best_ids[0][0],best_ids[1][0],best_ids[2][0],best_ids[3][0]
+    return hidden_layers_array[best_ids[0][0]],neurons_array[best_ids[1][0]],lr_array[best_ids[2][0]],n_array[best_ids[3][0]]
 
     #######################################################################
     #                       ** END OF YOUR CODE **
