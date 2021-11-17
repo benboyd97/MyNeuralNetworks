@@ -159,16 +159,21 @@ class Regressor():
 
         for _ in range(self.nb_epoch):
 
-            self.optimizer.zero_grad()
-
             for x, y in dataloader:
 
+                
                 pred = self.model(x)
                 loss = self.criterion(pred, y)
 
+                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+<<<<<<< HEAD
 
+=======
+            
+            print(loss, end="\r")
+>>>>>>> c0b7c0a9677377cfa8bbdd0a9f85effb81ddd4fe
             # TODO early stopping
             # TODO dropout
             # TODO regularization
