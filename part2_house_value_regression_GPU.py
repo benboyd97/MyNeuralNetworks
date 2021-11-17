@@ -406,7 +406,7 @@ def example_main():
     save_regressor(best_regressor)
 
 
-    f=open('BEST_PARAMS')
+    f=open('BEST_PARAMS.txt')
 
     f.write('Hidden Layers: '+str(best_hidden_layers)+ '\n')
     f.write('Neurons: ' + str(best_neurons)+ '\n')
