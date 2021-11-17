@@ -37,7 +37,7 @@ class NeuralNetwork(nn.Module):
 
 class Regressor():
 
-    def __init__(self, x, nb_epoch = 2, learning_rate=0.01, hidden_layers = 5, neurons=30):
+    def __init__(self, x, nb_epoch = 100, learning_rate=0.01, hidden_layers = 5, neurons=30):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """ 
@@ -345,7 +345,7 @@ def example_main():
     # This example trains on the whole available dataset. 
     # You probably want to separate some held-out data 
     # to make sure the model isn't overfitting
-    regressor = Regressor(x_train, nb_epoch = 1)
+    regressor = Regressor(x_train, nb_epoch = 100)
     regressor.fit(x_train, y_train)
 
     # Error
