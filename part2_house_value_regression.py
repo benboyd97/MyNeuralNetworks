@@ -75,7 +75,7 @@ class Regressor():
                                    output_size=1, 
                                    hidden_layers=self.hidden_layers, 
                                    neurons=self.neurons,
-                                   dropout=dropout).to_device()
+                                   dropout=dropout)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = torch.nn.MSELoss()
 
@@ -358,17 +358,18 @@ def example_main():
     data = pd.read_csv("housing.csv") 
 
     train, test = train_test_split(data, test_size=0.2, shuffle=True)
-    #test, val = train_test_split(test, test_size=0.5)
+    test, val = train_test_split(test, test_size=0.5)
 
     # Spliting input and output
     x_train = train.loc[:, data.columns != output_label]
     y_train = train.loc[:, [output_label]]
-    #x_val = val.loc[:, data.columns != output_label]
-    #y_val = val.loc[:, [output_label]]
+    x_val = val.loc[:, data.columns != output_label]
+    y_val = val.loc[:, [output_label]]
     x_test = test.loc[:, data.columns != output_label]
     y_test = test.loc[:, [output_label]]
 
-    regressor = Regressor(x_train, nb_epoch = 100)
+    regressor = Regressor(x_train, nb_epoch = 10)
+    print("done")
     regressor.fit(x_train, y_train)
 
     # Error
@@ -394,6 +395,5 @@ def example_main():
 
 
 if __name__ == "__main__":
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     example_main()
 
