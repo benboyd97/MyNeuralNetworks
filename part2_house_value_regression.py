@@ -172,7 +172,6 @@ class Regressor():
                 self.optimizer.step()
 
             # TODO early stopping
-            # TODO dropout
             # TODO regularization
 
         return self.model
