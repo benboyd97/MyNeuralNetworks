@@ -365,7 +365,7 @@ def example_main():
     y_test = test.loc[:, [output_label]]
 
     regressor = Regressor(x_train, hidden_layers=5,neurons=30,learning_rate=0.1, nb_epoch = 1000,dropout=0.25)
-    regressor.fit(x_train, y_train,x_val=x_val,y_val=y_val,mini_batch_size=100,early_stop_n=)
+    regressor.fit(x_train, y_train,x_val=x_val,y_val=y_val,mini_batch_size=100,early_stop_n=5)
 
     # Error
     error = regressor.score(x_test, y_test)
