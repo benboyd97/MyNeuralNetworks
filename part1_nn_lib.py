@@ -577,7 +577,8 @@ class Trainer(object):
         #######################################################################
         #                       ** START OF YOUR CODE **
         #######################################################################
-        pass
+        predictions = self.network(input_dataset)
+        return self._loss_layer.forward(predictions, target_dataset)
 
         #######################################################################
         #                       ** END OF YOUR CODE **
@@ -682,7 +683,6 @@ def example_main():
 
     preds = net(x_val).argmax(axis=1).squeeze()
     targets = y_val.argmax(axis=1).squeeze()
-    print(preds, targets)
     accuracy = (preds == targets).mean()
     print("Validation accuracy: {}".format(accuracy))
 
