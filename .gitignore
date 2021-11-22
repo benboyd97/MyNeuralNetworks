@@ -1,3 +1,4 @@
 .idea/
 __pycache__/
 part2_model.pickle
+.vscode/settings.json
