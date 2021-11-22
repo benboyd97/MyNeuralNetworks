@@ -11,30 +11,27 @@ from sklearn import preprocessing
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 
+# TODO remove
+from tqdm import tqdm
+
 # Define model
 class NeuralNetwork(nn.Module):
     def __init__(self, input_size, output_size, hidden_layers, neurons, dropout):
         super(NeuralNetwork, self).__init__()
+        
+        # input layer
+        layers = [nn.Linear(input_size, neurons), nn.ReLU()]
 
-        # Single linear layer with relu activation and dropout
-        linear_relu_block = nn.Sequential(
-            nn.Linear(neurons, neurons),
-            nn.ReLU(),
-            nn.Dropout(dropout)
-        )
-
-        # Stack linear layer blocks as hidden layers
-        linear_relu_stack = nn.Sequential()
+        # hidden layers
         for _ in range(hidden_layers):
-            linear_relu_stack = nn.Sequential(*(list(linear_relu_stack)+list(linear_relu_block)))
+            layers.append(nn.Linear(neurons, neurons))
+            layers.append(nn.ReLU())
+            layers.append(nn.Dropout(dropout))
 
-        # Add hidden layers to input and output layers
-        self.main = nn.Sequential(
-            nn.Linear(input_size, neurons),
-            nn.ReLU(),
-            linear_relu_stack,
-            nn.Linear(neurons, output_size)
-        )
+        # output layer
+        layers.append(nn.Linear(neurons, output_size))
+
+        self.main = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.main(x)
@@ -70,7 +67,7 @@ class Regressor():
                                    output_size=1, 
                                    hidden_layers=hidden_layers, 
                                    neurons=neurons,
-                                   dropout=dropout)
+                                   dropout=dropout).to(device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = torch.nn.MSELoss()
 
@@ -155,8 +152,8 @@ class Regressor():
         X, Y = self._preprocessor(x, y = y, training = True)
 
         # transform np to torch tensor
-        tensor_x = torch.Tensor(X)
-        tensor_y = torch.Tensor(Y)
+        tensor_x = torch.Tensor(X).to(device)
+        tensor_y = torch.Tensor(Y).to(device)
 
         # load tensors into a dataloader object
         dataset = TensorDataset(tensor_x, tensor_y)
@@ -221,9 +218,9 @@ class Regressor():
         # Only preprocess input if specified to allow proprocessed data to also be passed
         if pre_proc:
             x, _ = self._preprocessor(x, training = False)
-        tensor_x = torch.Tensor(x)
+        tensor_x = torch.Tensor(x).to(device)
 
-        return self.model(tensor_x).detach().numpy()
+        return self.model(tensor_x).detach().cpu().numpy()
 
 
         #######################################################################
@@ -316,20 +313,20 @@ def RegressorHyperParameterSearch(x_train,y_train,x_val,y_val,x_test,y_test):
         # dropout rate
 
 
-    lr_array=np.array([0.0001,0.001,0.01,0.1,1,10])
-    neurons_array=np.array([5,10,15,20,25,30])
-    hidden_layers_array=np.array([1,2,3,4,5])
+    lr_array=np.array([0.01,0.1,1,10])
+    neurons_array=np.array([5,10,20,30])
+    hidden_layers_array=np.array([1,2,3,4])
     n_array=np.array([2,5,10])
 
     results=np.zeros((len(hidden_layers_array),len(neurons_array),len(lr_array),len(n_array)))
 
-    for i in range(len(hidden_layers_array)):
-        for j in range(len(neurons_array)):
-            for k in range(len(lr_array)):
-                for l in range(len(n_array)):
+    for i in tqdm(range(len(hidden_layers_array))):
+        for j in tqdm(range(len(neurons_array))):
+            for k in tqdm(range(len(lr_array))):
+                for l in tqdm(range(len(n_array))):
 
-                    regressor = Regressor(x_train, hidden_layers=hidden_layers_array[i],neurons=neurons_array[j],learning_rate=lr_array[k], nb_epoch = 1000,dropout=0.25)
-                    regressor.fit(x_train, y_train,x_val=x_val,y_val=y_val,mini_batch_size=100,early_stop_n=n_array[l])
+                    regressor = Regressor(x_train, hidden_layers=hidden_layers_array[i],neurons=neurons_array[j],learning_rate=lr_array[k], nb_epoch = 100,dropout=0.25)
+                    regressor.fit(x_train, y_train,x_val=x_val,y_val=y_val,mini_batch_size=50,early_stop_n=n_array[l])
 
                     
                     results[i,j,k,l] = regressor.score(x_test, y_test)
@@ -364,14 +361,13 @@ def example_main():
     x_test = test.loc[:, data.columns != output_label]
     y_test = test.loc[:, [output_label]]
 
-    regressor = Regressor(x_train, hidden_layers=5,neurons=30,learning_rate=0.1, nb_epoch = 1000,dropout=0.25)
-    regressor.fit(x_train, y_train,x_val=x_val,y_val=y_val,mini_batch_size=100,early_stop_n=5)
+    regressor = Regressor(x_train, hidden_layers=2,neurons=27,learning_rate=0.1, nb_epoch = 100,dropout=0.25)
+    print(regressor.model)
+    regressor.fit(x_train, y_train,x_val=x_val,y_val=y_val,mini_batch_size=50,early_stop_n=5)
 
     # Error
     error = regressor.score(x_test, y_test)
     print("\nRegressor error: {}\n".format(error))
-
-
 
     print("\nPerforming Hyper Parameter Tuning")
     best_hidden_layers,best_neurons,best_learning_rate,best_early_stop_n=RegressorHyperParameterSearch(x_train,y_train,x_val=x_val,y_val=y_val,x_test=x_test,y_test=y_test)
@@ -390,6 +386,7 @@ def example_main():
     save_regressor(best_regressor)
 
 if __name__ == "__main__":
-
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
     example_main()
 
