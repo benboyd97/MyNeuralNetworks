@@ -11,9 +11,6 @@ from sklearn import preprocessing
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 
-# TODO remove
-from tqdm import tqdm
-
 # Define model
 class NeuralNetwork(nn.Module):
     def __init__(self, input_size, output_size, hidden_layers, neurons, dropout):
@@ -319,8 +316,7 @@ def RegressorHyperParameterSearch(x_train,y_train,x_val,y_val):
 
     results = np.zeros((len(hidden_layers_array), len(neurons_array), len(lr_array), len(n_array)))
 
-    # TODO remove tqdm
-    for i in tqdm(range(len(hidden_layers_array))):
+    for i in range(len(hidden_layers_array)):
         for j in range(len(neurons_array)):
             for k in range(len(lr_array)):
                 for l in range(len(n_array)):
@@ -331,8 +327,7 @@ def RegressorHyperParameterSearch(x_train,y_train,x_val,y_val):
                     
                     results[i,j,k,l] = regressor.score(x_val, y_val)
 
-    # TODO remove save
-    np.save("hyp_tunin.npy", results)
+    #np.save("hyp_tunin.npy", results)
     best_ids=np.where(results==np.min(results))
 
     return hidden_layers_array[best_ids[0][0]],neurons_array[best_ids[1][0]],lr_array[best_ids[2][0]],n_array[best_ids[3][0]]
@@ -388,7 +383,5 @@ def example_main():
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # TODO remove print
-    print(device)
     example_main()
 
