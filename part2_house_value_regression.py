@@ -364,7 +364,7 @@ def example_main():
     # Error
     error = regressor.score(x_test, y_test)
     print("\nRegressor error: {}\n".format(error))
-
+    save_regressor(regressor)
     print("\nPerforming Hyper Parameter Tuning")
     best_hidden_layers, best_neurons, best_learning_rate, best_early_stop_n = RegressorHyperParameterSearch(x_train,y_train,x_val,y_val)
     print('\nBest Params:')
@@ -382,6 +382,7 @@ def example_main():
     save_regressor(best_regressor)
 
 if __name__ == "__main__":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = "cpu"
     example_main()
 
