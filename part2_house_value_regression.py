@@ -362,7 +362,6 @@ def example_main():
     y_test = test.loc[:, [output_label]]
 
     regressor = Regressor(x_train, hidden_layers=2,neurons=27,learning_rate=0.1, nb_epoch = 100,dropout=0.25)
-    print(regressor.model)
     regressor.fit(x_train, y_train,x_val=x_val,y_val=y_val,mini_batch_size=50,early_stop_n=5)
 
     # Error
