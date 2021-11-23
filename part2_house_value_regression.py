@@ -36,7 +36,7 @@ class NeuralNetwork(nn.Module):
 
 class Regressor():
 
-    def __init__(self, x, nb_epoch=100, learning_rate=0.01, hidden_layers=5, neurons=30, dropout=0.5):
+    def __init__(self, x, nb_epoch=200, learning_rate=0.01, hidden_layers=5, neurons=30, dropout=0.5):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """ 
@@ -319,8 +319,8 @@ def RegressorHyperParameterSearch(x_train,y_train,x_val,y_val):
         # dropout rate
 
 
-    lr_array = np.array([0.01,0.1,1,10])
-    neurons_array = np.array([5,10,20,30])
+    lr_array = np.array([0.01,0.1,1])
+    neurons_array = np.array([20, 30, 40])
     hidden_layers_array = np.array([1,2,3,4])
     n_array = np.array([2,5,10])
 
@@ -331,7 +331,7 @@ def RegressorHyperParameterSearch(x_train,y_train,x_val,y_val):
             for k in range(len(lr_array)):
                 for l in range(len(n_array)):
 
-                    regressor = Regressor(x_train, hidden_layers=hidden_layers_array[i], neurons=neurons_array[j], learning_rate=lr_array[k], nb_epoch = 100, dropout=0.5)
+                    regressor = Regressor(x_train, hidden_layers=hidden_layers_array[i], neurons=neurons_array[j], learning_rate=lr_array[k], nb_epoch = 200, dropout=0.5)
                     regressor.fit(x_train, y_train, x_val=x_val, y_val=y_val, mini_batch_size=50, early_stop_n=n_array[l])
 
                     
@@ -368,8 +368,8 @@ def example_main():
     x_test = test.loc[:, data.columns != output_label]
     y_test = test.loc[:, [output_label]]
 
-    regressor = Regressor(x_train, hidden_layers=1, neurons=30, learning_rate=0.1, nb_epoch=100, dropout=0.5)
-    regressor.fit(x_train, y_train, x_val=x_val, y_val=y_val, mini_batch_size=50, early_stop_n=5)
+    regressor = Regressor(x_train, hidden_layers=1, neurons=40, learning_rate=0.1, nb_epoch=1000, dropout=0.5)
+    regressor.fit(x_train, y_train, x_val=x_val, y_val=y_val, mini_batch_size=50, early_stop_n=10)
 
     # Error
     error = regressor.score(x_test, y_test)
