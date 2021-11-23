@@ -204,6 +204,8 @@ class Regressor():
                     self.model.load_state_dict(model_backup)
                     return self.model
 
+            # TODO regularization
+
         return self.model
 
         #######################################################################
