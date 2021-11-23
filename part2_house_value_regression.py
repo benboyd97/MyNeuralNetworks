@@ -64,7 +64,7 @@ class Regressor():
                                    output_size=1, 
                                    hidden_layers=hidden_layers, 
                                    neurons=neurons,
-                                   dropout=dropout).to(device)
+                                   dropout=dropout)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = torch.nn.MSELoss()
 
@@ -149,8 +149,8 @@ class Regressor():
         X, Y = self._preprocessor(x, y = y, training = True)
 
         # transform np to torch tensor
-        tensor_x = torch.Tensor(X).to(device)
-        tensor_y = torch.Tensor(Y).to(device)
+        tensor_x = torch.Tensor(X)
+        tensor_y = torch.Tensor(Y)
 
         # load tensors into a dataloader object
         dataset = TensorDataset(tensor_x, tensor_y)
@@ -215,9 +215,9 @@ class Regressor():
         # Only preprocess input if specified to allow proprocessed data to also be passed
         if pre_proc:
             x, _ = self._preprocessor(x, training = False)
-        tensor_x = torch.Tensor(x).to(device)
+        tensor_x = torch.Tensor(x)
 
-        prediction = self.model.eval()(tensor_x).detach().cpu().numpy()
+        prediction = self.model.eval()(tensor_x).detach().numpy()
         # Put model back into train mode after a prediction has been made
         self.model.train()
 
@@ -382,7 +382,5 @@ def example_main():
     save_regressor(best_regressor)
 
 if __name__ == "__main__":
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
     example_main()
 
