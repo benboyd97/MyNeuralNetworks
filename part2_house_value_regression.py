@@ -42,7 +42,7 @@ class NeuralNetwork(nn.Module):
 
 class Regressor():
 
-    def __init__(self, x, nb_epoch=100, learning_rate=0.01, hidden_layers=5, neurons=30, dropout=0.25):
+    def __init__(self, x, nb_epoch=100, learning_rate=0.01, hidden_layers=5, neurons=30, dropout=0.5):
         # You can add any input parameters you need
         # Remember to set them with a default value for LabTS tests
         """ 
