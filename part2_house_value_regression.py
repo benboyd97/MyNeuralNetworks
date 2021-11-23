@@ -97,7 +97,13 @@ class Regressor():
         if training == True: 
             # one-hot encoding
             self.one_hot = preprocessing.LabelBinarizer().fit(x['ocean_proximity'])
-            x['ocean_proximity'] = np.argmax(self.one_hot.transform(x['ocean_proximity']), axis=1) 
+            hot_arr=self.one_hot.transform(x['ocean_proximity'])
+            x=x.drop(columns=['ocean_proximity'])
+            
+            for i in range(np.shape(hot_arr)[1]):
+
+                x['Ocean_Prox_'+str(i)]=hot_arr[:,i]
+           
 
             # save x columnwise normalisation constants
             self.norm_x_min = x.min() 
@@ -106,7 +112,13 @@ class Regressor():
             self.norm_x_std = x.std() 
         else:
             # perform one-hot tranform 
-            x['ocean_proximity'] = np.argmax(self.one_hot.transform(x['ocean_proximity']), axis=1)     
+            hot_arr=self.one_hot.transform(x['ocean_proximity'])
+            x=x.drop(columns=['ocean_proximity'])
+
+            for i in range(np.shape(hot_arr)[1]):
+
+                x['Ocean_Prox_'+str(i)]=hot_arr[:,i]
+    
 
         if norm_method == 'standard':
             # calculate using saved normalisation constants from training
