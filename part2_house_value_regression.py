@@ -365,6 +365,7 @@ def example_main():
     error = regressor.score(x_test, y_test)
     print("\nRegressor error: {}\n".format(error))
     save_regressor(regressor)
+    
     print("\nPerforming Hyper Parameter Tuning")
     best_hidden_layers, best_neurons, best_learning_rate, best_early_stop_n = RegressorHyperParameterSearch(x_train,y_train,x_val,y_val)
     print('\nBest Params:')
