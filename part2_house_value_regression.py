@@ -11,6 +11,8 @@ from sklearn import preprocessing
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 
+#from tqdm import tqdm
+
 # Define model
 class NeuralNetwork(nn.Module):
     def __init__(self, input_size, output_size, hidden_layers, neurons, dropout):
@@ -64,7 +66,7 @@ class Regressor():
                                    output_size=1, 
                                    hidden_layers=hidden_layers, 
                                    neurons=neurons,
-                                   dropout=dropout)
+                                   dropout=dropout)#.to(device)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = torch.nn.MSELoss()
 
@@ -161,8 +163,8 @@ class Regressor():
         X, Y = self._preprocessor(x, y = y, training = True)
 
         # transform np to torch tensor
-        tensor_x = torch.Tensor(X)
-        tensor_y = torch.Tensor(Y)
+        tensor_x = torch.Tensor(X)#.to(device)
+        tensor_y = torch.Tensor(Y)#.to(device)
 
         # load tensors into a dataloader object
         dataset = TensorDataset(tensor_x, tensor_y)
@@ -225,7 +227,7 @@ class Regressor():
         # Only preprocess input if specified to allow proprocessed data to also be passed
         if pre_proc:
             x, _ = self._preprocessor(x, training = False)
-        tensor_x = torch.Tensor(x)
+        tensor_x = torch.Tensor(x)#.to(device)
 
         prediction = self.model.eval()(tensor_x).detach().numpy()
         # Put model back into train mode after a prediction has been made
@@ -315,14 +317,11 @@ def RegressorHyperParameterSearch(x_train,y_train,x_val,y_val):
     
     # maunual exprimentation:
         # mini_batch size
-        # max_epochs
-        # dropout rate
-
 
     lr_array = np.array([0.01,0.1,1])
-    neurons_array = np.array([20, 30, 40])
+    neurons_array = np.array([30, 40, 50])
     hidden_layers_array = np.array([1,2,3,4])
-    n_array = np.array([2,5,10])
+    n_array = np.array([5, 10, 15])
 
     results = np.zeros((len(hidden_layers_array), len(neurons_array), len(lr_array), len(n_array)))
 
@@ -331,7 +330,7 @@ def RegressorHyperParameterSearch(x_train,y_train,x_val,y_val):
             for k in range(len(lr_array)):
                 for l in range(len(n_array)):
 
-                    regressor = Regressor(x_train, hidden_layers=hidden_layers_array[i], neurons=neurons_array[j], learning_rate=lr_array[k], nb_epoch = 200, dropout=0.5)
+                    regressor = Regressor(x_train, hidden_layers=hidden_layers_array[i], neurons=neurons_array[j], learning_rate=lr_array[k], nb_epoch = 1000, dropout=0.5)
                     regressor.fit(x_train, y_train, x_val=x_val, y_val=y_val, mini_batch_size=50, early_stop_n=n_array[l])
 
                     
@@ -368,7 +367,7 @@ def example_main():
     x_test = test.loc[:, data.columns != output_label]
     y_test = test.loc[:, [output_label]]
 
-    regressor = Regressor(x_train, hidden_layers=1, neurons=40, learning_rate=0.1, nb_epoch=1000, dropout=0.5)
+    regressor = Regressor(x_train, hidden_layers=2, neurons=50, learning_rate=0.01, nb_epoch=1000, dropout=0.5)
     regressor.fit(x_train, y_train, x_val=x_val, y_val=y_val, mini_batch_size=50, early_stop_n=10)
 
     # Error
@@ -385,13 +384,15 @@ def example_main():
     print('Best Early Stop n', best_early_stop_n)
 
     print("\nTraining With Best Params")
-    best_regressor=Regressor(x_train,hidden_layers=best_hidden_layers,neurons=best_neurons,learning_rate=best_learning_rate,nb_epoch=1000,dropout=0.25)
-    best_regressor.fit(x_train, y_train,x_val=x_val,y_val=y_val,mini_batch_size=100,early_stop_n=best_early_stop_n)
+    best_regressor=Regressor(x_train,hidden_layers=best_hidden_layers,neurons=best_neurons,learning_rate=best_learning_rate,nb_epoch=1000,dropout=0.5)
+    best_regressor.fit(x_train, y_train,x_val=x_val,y_val=y_val,mini_batch_size=50,early_stop_n=best_early_stop_n)
     best_error = best_regressor.score(x_test, y_test)
 
     print("\nBest Regressor error: {}\n".format(best_error))
     save_regressor(best_regressor)
 
 if __name__ == "__main__":
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #print(device)
     example_main()
 
