@@ -11,8 +11,6 @@ from sklearn import preprocessing
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 
-#from tqdm import tqdm
-
 # Define model
 class NeuralNetwork(nn.Module):
     def __init__(self, input_size, output_size, hidden_layers, neurons, dropout):
@@ -57,7 +55,6 @@ class Regressor():
         #######################################################################
         self.nb_epoch = nb_epoch
 
-
         # Preprocess dataset to build network
         X, _ = self._preprocessor(x, training = True)
 
@@ -66,7 +63,7 @@ class Regressor():
                                    output_size=1, 
                                    hidden_layers=hidden_layers, 
                                    neurons=neurons,
-                                   dropout=dropout)#.to(device)
+                                   dropout=dropout)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = torch.nn.MSELoss()
 
@@ -163,8 +160,8 @@ class Regressor():
         X, Y = self._preprocessor(x, y = y, training = True)
 
         # transform np to torch tensor
-        tensor_x = torch.Tensor(X)#.to(device)
-        tensor_y = torch.Tensor(Y)#.to(device)
+        tensor_x = torch.Tensor(X)
+        tensor_y = torch.Tensor(Y)
 
         # load tensors into a dataloader object
         dataset = TensorDataset(tensor_x, tensor_y)
@@ -227,7 +224,7 @@ class Regressor():
         # Only preprocess input if specified to allow proprocessed data to also be passed
         if pre_proc:
             x, _ = self._preprocessor(x, training = False)
-        tensor_x = torch.Tensor(x)#.to(device)
+        tensor_x = torch.Tensor(x)
 
         prediction = self.model.eval()(tensor_x).detach().numpy()
         # Put model back into train mode after a prediction has been made
@@ -336,7 +333,6 @@ def RegressorHyperParameterSearch(x_train,y_train,x_val,y_val):
                     
                     results[i,j,k,l] = regressor.score(x_val, y_val)
 
-    #np.save("hyp_tunin.npy", results)
     best_ids=np.where(results==np.min(results))
 
     return hidden_layers_array[best_ids[0][0]],neurons_array[best_ids[1][0]],lr_array[best_ids[2][0]],n_array[best_ids[3][0]]
@@ -392,7 +388,5 @@ def example_main():
     save_regressor(best_regressor)
 
 if __name__ == "__main__":
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #print(device)
     example_main()
 
