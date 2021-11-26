@@ -1,4 +1,8 @@
 # Part 1
+The library is functional, an example of how to use it is seen in the example_main() method. In order to see an example output run:
+```
+python3 part1_nn_lib.py
+```
 
 # Part 2
 
